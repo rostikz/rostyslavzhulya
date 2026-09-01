@@ -1,0 +1,47 @@
+name: Publish portfolio ZIP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'rostyslav-portfolio-v17-online-ready.zip'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract portfolio
+        run: |
+          set -e
+          rm -rf /tmp/portfolio-v17
+          mkdir -p /tmp/portfolio-v17
+          unzip -q rostyslav-portfolio-v17-online-ready.zip -d /tmp/portfolio-v17
+          test -f /tmp/portfolio-v17/rostyslav-portfolio-v17-online/index.html
+          test -d /tmp/portfolio-v17/rostyslav-portfolio-v17-online/assets
+
+      - name: Publish site files
+        run: |
+          set -e
+          cp /tmp/portfolio-v17/rostyslav-portfolio-v17-online/index.html ./index.html
+          rm -rf ./assets
+          cp -R /tmp/portfolio-v17/rostyslav-portfolio-v17-online/assets ./assets
+          rm -f rostyslav-portfolio-v17-online-ready.zip
+
+      - name: Commit published portfolio
+        run: |
+          set -e
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A index.html assets rostyslav-portfolio-v17-online-ready.zip
+          if git diff --cached --quiet; then
+            echo 'No changes to publish.'
+            exit 0
+          fi
+          git commit -m 'Publish portfolio V17'
+          git push
